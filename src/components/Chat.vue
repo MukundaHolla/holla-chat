@@ -4,7 +4,8 @@
         <div class="card">
             <div class="card-content">
                 <ul class="messages" v-chat-scroll>
-                    <li v-for="message in messages" :key="message.id">
+                    <li v-for="(message,index) in messages" :key="index">
+                        <span @click="deleteMessage(message)" class="grey-text delete"><i class="material-icons">delete</i></span>
                         <span class="teal-text">{{ message.name }}</span>
                         <span class="grey-text text-darken-3">{{ message.content }}</span>
                         <span class="grey-text time">{{ message.timestamp }}</span>
@@ -50,6 +51,29 @@ export default {
                 }
             })
         })
+    },
+    methods: {
+        deleteMessage(message) {
+            db.collection('messages').doc(message.id)
+            .delete()
+            .then(() => {
+                let ref = db.collection('messages').orderBy('timestamp')
+        
+                ref.onSnapshot(snapshot => {
+                    snapshot.docChanges.forEach(change => {
+                        if(change.type == 'added') {
+                            let doc = change.doc
+                            this.messages.push({
+                                id: doc.id,
+                                name: doc.data().name,
+                                content: doc.data().content,
+                                timestamp: moment(doc.data().timestamp).format('lll')
+                            })
+                        }
+                    })
+                })
+            })
+        }
     }
 }
 </script>
@@ -80,5 +104,9 @@ export default {
         
     .messages::-webkit-scrollbar-thumb {
         background: #aaa; 
+    }
+    .messages .delete {
+        cursor: pointer;
+        
     }
 </style>
